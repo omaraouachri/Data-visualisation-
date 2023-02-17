@@ -1,0 +1,149 @@
+---
+title: "DM1"
+author: "Omar Aouachri"
+date: '2023-02-09'
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+# Option de chunk
+knitr::opts_chunk$set()
+```
+**Charger les packages**
+
+```{r message=FALSE}
+library(ggplot2)
+library(dplyr)
+library(patchwork)
+library(readr)
+```
+
+**Charger les données**
+
+```{r message=FALSE}
+threats <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-08-18/threats.csv',show_col_types = FALSE)
+```
+
+**Exploitation des données**
+
+```{r }
+table(threats$country, threats$threatened)
+```
+
+**On vérifie bien le mauvais choix de l'auteur quand il a travaillé sur le nombre de plantes menacées et non pas le taux des plantes menacées par pays, par exemple on voit bien que Madagascar est sur representé dans son travail et HAiti est sous representé. Si on considére le taux des plantes menacées on voit bien que Haiti est supposé plus representé que Madagascar (14/48=29% contre 221/1176=18%)**
+
+**Extraire les colonnes dont on a besoin dans nos graphes (les continents, les pays et les plantes menacées dans chaque pays)**
+
+```{r}
+data <- threats %>% 
+  filter(threatened==1) %>%
+  group_by(country,continent) %>% 
+  count(name = "threatened_plants") %>% 
+  ungroup()
+```
+
+**Maintenant, j'ai voulu ajouter une autre colonne à notre tableau de données intitulée "total_plants" qui difinie le nombre total de plantes dans chaque pays.**
+
+```{r}
+data1 <- threats %>% 
+  group_by( country,continent) %>% 
+  count(name = "total") %>% 
+  ungroup()
+df= cbind.data.frame(data,data1$total)
+names(df)[4]="total_plants"
+```
+
+**Simplifier les noms de quelques pays pour avoir un graphique non chargé et bien visible.**
+
+```{r}
+for (i in 1: length(df$country)){
+  if(df$country[i]=="Saint Helena, Ascension and Tristan da Cunha")  df$country[i]="SH,AS Cunha"
+  if(df$country[i]=="Sao Tome and Principe")  df$country[i]="Sao Tome"
+  if(df$country[i]=="United Kingdom")  df$country[i]="UK"}
+```
+
+**Contruire une table de données pour chaque continent pour faciliter la conrtruction des plots.**
+
+```{r}
+africa <- df %>% 
+  filter(continent=="Africa")
+europe <- df %>% 
+  filter(continent=="Europe")
+oceania <- df %>% 
+  filter(continent=="Oceania")
+asia <- df %>% 
+  filter(continent=="Asia") 
+north_america <- df %>% 
+  filter(continent=="North America")
+
+```
+
+**Construction des graphiques :**
+
+```{r}
+p1=ggplot(data = africa) + 
+  geom_col(mapping = aes(x = country, y = threatened_plants/total_plants*100)) + # cette ligne permet de visualiser le taux des plantes menacées et non pas le nombre ce qui est plus significative 
+  geom_text(mapping = aes(x = country, y = threatened_plants/total_plants*100,label = round(threatened_plants/total_plants*100,2)),colour = "white",hjust = 1.5,size=3.5) + # texte ajouté = fréquences
+  coord_flip() +                               # permet d'inverser les axes
+  labs(
+    x = "les pays africains",
+    y = "taux de plantes menacées en %"
+  ) +
+  ggtitle("Taux des plantes menacées en afrique par pays")+theme(plot.title = element_text(color = "red", size = 12, face = "bold",hjust = 0.8),axis.text.y = element_text(hjust = 1, size = 12),axis.title.y = element_text(hjust = 0.5, size = 13, face = "bold"),axis.title.x = element_text(hjust = 0.5, size = 13, face = "bold")) # ajouter un titre 
+p1
+
+p2= ggplot(data = europe) + 
+  geom_col(mapping = aes(x = country, y = threatened_plants/total_plants*100)) + # cette ligne permet de visualiser le taux des plantes menacées et non pas le nombre ce qui est plus significative 
+  geom_text(mapping = aes(x = country, y = threatened_plants/total_plants*100,label = round(threatened_plants/total_plants*100,2)),colour = "white",hjust = 1.5) + # texte ajouté = fréquences
+  coord_flip() +                               # permet d'inverser les axes
+  labs(
+    x = "les pays européens",
+    y = "taux de plantes menacées en %"
+  ) +
+  ggtitle("Taux des plantes menacées en europe par pays")+theme(plot.title = element_text(color = "red", size = 12, face = "bold",hjust = 0.9),axis.text.y = element_text(hjust = 1, size = 12),axis.title.y = element_text(hjust = 0.5, size = 13, face = "bold"),axis.title.x = element_text(hjust = 0.5, size = 13, face = "bold")) # ajouter un titre 
+p2
+
+p3= ggplot(data = oceania) + 
+  geom_col(mapping = aes(x = country, y = threatened_plants/total_plants*100)) + # cette ligne permet de visualiser le taux des plantes menacées et non pas le nombre ce qui est plus significative 
+  geom_text(mapping = aes(x = country, y = threatened_plants/total_plants*100,label = round(threatened_plants/total_plants*100,2)),colour = "white",hjust = 1.5) + # texte ajouté = fréquences
+  coord_flip() +                               # permet d'inverser les axes
+  labs(
+    x = "les pays océaniens",
+    y = "taux de plantes menacées en %"
+  ) +
+  ggtitle("Taux des plantes menacées en océanie par pays")+theme(plot.title = element_text(color = "red", size = 12, face = "bold",hjust = 0.9),axis.text.y = element_text(hjust = 1, size = 12),axis.title.y = element_text(hjust = 0.5, size = 13, face = "bold"),axis.title.x = element_text(hjust = 0.5, size = 13, face = "bold")) # ajouter un titre 
+p3
+
+p4= ggplot(data = asia) + 
+  geom_col(mapping = aes(x = country, y = threatened_plants/total_plants*100)) + # cette ligne permet de visualiser le taux des plantes menacées et non pas le nombre ce qui est plus significative 
+  geom_text(mapping = aes(x = country, y = threatened_plants/total_plants*100,label = round(threatened_plants/total_plants*100,2)),colour = "white",hjust = 1.5) + # texte ajouté = fréquences
+  coord_flip() +                               # permet d'inverser les axes
+  labs(
+    x = "les pays asiatiques",
+    y = "taux de plantes menacées en %"
+  ) +
+  ggtitle("Taux des plantes menacées en asie par pays")+theme(plot.title = element_text(color = "red", size = 12, face = "bold",hjust = 1),axis.text.y = element_text(hjust = 1, size = 12),axis.title.y = element_text(hjust = 0.5, size = 13, face = "bold"),axis.title.x = element_text(hjust = 0.5, size = 13, face = "bold")) # ajouter un titre 
+p4
+
+p5 = ggplot(data = north_america) + 
+  geom_col(mapping = aes(x = country, y = threatened_plants/total_plants*100)) + # cette ligne permet de visualiser le taux des plantes menacées et non pas le nombre ce qui est plus significative 
+  geom_text(mapping = aes(x = country, y = threatened_plants/total_plants*100,label = round(threatened_plants/total_plants*100,2)),colour = "white",hjust = 1.5) + # texte ajouté = fréquences
+  coord_flip() +                               # permet d'inverser les axes
+  labs(
+    x = "les pays du nord de l'Amérique",
+    y = "taux de plantes menacées en %"
+  ) +
+  ggtitle("Taux des plantes menacées en nord américain par pays")+theme(plot.title = element_text(color = "red", size = 12, face = "bold",hjust = 0.8),axis.text.y = element_text(hjust = 1, size = 12),axis.title.y = element_text(hjust = 0.5, size = 13, face = "bold"),axis.title.x = element_text(hjust = 0.5, size = 13, face = "bold")) # ajouter un titre 
+p5
+
+```
+
+**J'ai utilisé le package patchwork pour visualizer les 5 graphiques de chaque continent dans un seul graph et puis j'ai ajouté la source de données**
+
+```{r  fig.width = 14,fig.asp = 1.5,out.width = "100%"}
+{p3+p2+p1+p4+p5}+ plot_layout(ncol = 3,nrow = 3, width = c(1, 1))+ labs(caption = "(Source de données : https://github.com/rfordatascience/tidytuesday/blob/master/data/2020/2020-08-18/threats.csv)")+  
+  theme(plot.caption = element_text(color = "red", face = "italic",size = 14,hjust = 0.4,vjust =-9))
+
+```
